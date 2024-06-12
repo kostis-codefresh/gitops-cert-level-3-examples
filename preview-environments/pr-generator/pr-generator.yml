@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: my-preview-apps
+  namespace: argocd  
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+  - pullRequest:
+      github:
+        owner: codefresh-contrib
+        repo: gitops-cert-level-3-examples
+      requeueAfterSeconds: 180
+  template:
+    metadata:
+      name: 'myapp-{{.branch}}'
+    spec:
+      source:
+        repoURL: 'https://github.com/codefresh-contrib/gitops-cert-level-3-examples.git'
+        targetRevision: HEAD
+        path: preview-environments/kustomize-preview-app/ 
+        kustomize:
+          images:
+            - 'docker.io/kostiscodefresh/my-preview-app:{{.branch_slug}}'
+      project: "default"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: 'preview-{{.branch_slug}}'
+      syncPolicy:
+        automated:
+          prune: true  
+        syncOptions:
+        - CreateNamespace=true 
